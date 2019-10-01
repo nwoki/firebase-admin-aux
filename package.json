@@ -1,0 +1,14 @@
+{
+  "name": "firebase-admin-aux",
+  "version": "1.0.0",
+  "description": "Custom module to simplify recurring tasks with the Firabase Admin SDK",
+  "main": "lib/firebase-admin-aux.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Francesco Nwokeka <francesco.nwokeka@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "firebase-admin": "^8.6.0"
+  }
+}
