@@ -9,6 +9,7 @@
   "author": "Francesco Nwokeka <francesco.nwokeka@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "firebase-admin": "^8.6.0"
+    "firebase-admin": "^8.6.0",
+    "jsonapi-serializer": "^3.6.5"
   }
 }
