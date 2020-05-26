@@ -2,7 +2,9 @@
 
 ## Description
 
-A simple nodejs module for performing custom and most common tasks using the firebase admin sdk.
+A simple nodejs module for performing custom and most common tasks using the firebase admin sdk. It has the possibility to cache user authentication
+info to avoid constantly polling the firebase servers. In order to do this, you'll have to provide the redis connection url and port via
+environment variables: `REDIS_URL` and `REDIS_PORT`
 
 
 ## How to use
@@ -22,12 +24,17 @@ app.use((req, res, next) => Firebase.validateToken(req, res, next));
 
 const firebaseAdminAux = require("firebase-admin-aux");
 
-firebaseAdminAux.initialize(FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY, FIREBASE_DATABASE_URL);
+firebaseAdminAux.initialize(FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY, FIREBASE_DATABASE_URL, true);
 
 ```
 
 
 ## Methods
+
+* `inizialize(firebaseProjectId: string, firebaseClientEmail: string, firebasePrivateKey: string, firebaseDatabaseUrl: string, cacheEnabled: boolean)`
+
+Initializes the Firebase Admin Aux module with required info and, if requested, prepares redis for caching.
+
 
 * `validateToken(req: Express.Request, res: Express.Response, next: callback)`
 
