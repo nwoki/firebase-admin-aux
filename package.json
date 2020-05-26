@@ -9,7 +9,9 @@
   "author": "Francesco Nwokeka <francesco.nwokeka@gmail.com>",
   "license": "ISC",
   "dependencies": {
+    "chalk": "^4.0.0",
     "firebase-admin": "^8.6.0",
-    "jsonapi-serializer": "^3.6.5"
+    "jsonapi-serializer": "^3.6.5",
+    "redis-client-aux": "git+https://github.com/nwoki/redis-client-aux.git"
   }
 }
