@@ -1,6 +1,6 @@
 {
   "name": "firebase-admin-aux",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Custom module to simplify recurring tasks with the Firabase Admin SDK",
   "main": "lib/firebase-admin-aux.js",
   "scripts": {
