@@ -1,3 +1,6 @@
+[2.0.0]
+* async initialize (breaking change)
+
 [1.3.0]
 * logs improvements
 
