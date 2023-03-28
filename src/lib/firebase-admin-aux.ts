@@ -29,9 +29,17 @@ export class FirebaseAdminAux {
                 redisUrl = process.env.REDIS_CACHE_URL ?? process.env.REDIS_URL as string ?? 'redis://localhost:6379';
             }
 
-            // await setupRedisCache();
             this.m_redisConnection = new RedisConnection(redisUrl, 'FirebaseAdminAux');
         }
+
+        // https://cloud.google.com/blog/products/containers-kubernetes/kubernetes-best-practices-terminating-with-grace
+        process.on('SIGTERM', async () => {
+            console.info('SIGTERM signal received.');
+            console.info('Closing open Redis connections (if any)');
+
+            await this.m_redisConnection.client().quit();
+            process.exit();
+        });
     }
 
     public async init(configs: FirebaseAccountConfig[]) {
