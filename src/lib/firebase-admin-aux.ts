@@ -1,8 +1,36 @@
 import admin from 'firebase-admin';
 import { App, initializeApp } from 'firebase-admin/app';
+import { getAuth, Auth } from 'firebase-admin/auth';
 import { getMessaging, Messaging } from 'firebase-admin/messaging';
 import { RedisConnection } from './redisconnection';
 import UrlParse from 'url-parse';
+import { Request, Response, NextFunction } from 'express';
+import { Error as JSONAPIError } from 'jsonapi-serializer';
+
+function customError(status: number, title: string, message: string) : JSONAPIError {
+    return new JSONAPIError({
+        status: status,
+        title: title,
+        detail: message
+    });
+};
+
+
+// function firebaseError(error) {
+//     let code = 400;
+//
+//     if (error.code == "auth/id-token-expired" || error.code == "auth/argument-error"
+//         || error.code == "auth/invalid-user-token" || error.code == "auth/user-token-expired") {
+//         code = 401;
+//     }
+//
+//     return new JSONAPIError({
+//         status: code,
+//         title: error.code,
+//         detail: error.message
+//     });
+// };
+
 
 export interface FirebaseAccountConfig {
     name: string,               // key to identify the configuration with
@@ -11,6 +39,7 @@ export interface FirebaseAccountConfig {
 
 export interface FirebaseAdminObj {
     admin: App,
+    auth: Auth,
     messaging: Messaging
 }
 
@@ -57,17 +86,18 @@ export class FirebaseAdminAux {
             const firebaseAdmin = initializeApp({
                 credential: admin.credential.cert(JSON.parse(config.jsonCredentials))
             }, config.name);
+            const firebaseAuth = getAuth(firebaseAdmin);
             const firebaseMessaging = getMessaging(firebaseAdmin);
 
             // stash
-            this.m_firebaseAccounts.set(config.name, {admin: firebaseAdmin, messaging: firebaseMessaging} as FirebaseAdminObj);
+            this.m_firebaseAccounts.set(config.name, {admin: firebaseAdmin, auth: firebaseAuth, messaging: firebaseMessaging} /*as FirebaseAdminObj*/);
         }
-
-        this.m_initialized = true;
 
         if (this.m_redisConnection) {
             await this.m_redisConnection.init();
         }
+
+        this.m_initialized = true;
     }
 
     /**
@@ -76,77 +106,84 @@ export class FirebaseAdminAux {
     public account(configName: string): FirebaseAdminObj | undefined {
         return this.m_firebaseAccounts.get(configName);
     }
-}
 
+    private async lookupFirebaseUser(bearerToken: string, res: Response, configName?: string) {
+        const firebaseAccount = configName ? this.account(configName) : this.m_firebaseAccounts.entries().next().value[1];
+
+        if (!firebaseAccount) {
+            throw new Error('account not found');
+        }
+
+        const decodedToken = await firebaseAccount.auth.verifyIdToken(bearerToken);
+
+        // do we have cache enabled?
+        if (this.m_redisConnection) {
+            await this.m_redisConnection.setWithExpiry(`firebase_aux_${bearerToken}`, JSON.stringify(decodedToken), ((decodedToken.exp - Math.round(new Date() as any / 1000))));
+        }
+
+        this.populateResponseObject(res, decodedToken, bearerToken);
+    }
+
+    private populateResponseObject(res: Response, decodedTokenObj: any, bearerToken: string) {
+        res.locals['firebase_uid'] = decodedTokenObj.user_id;
+        res.locals['decoded_token'] = decodedTokenObj;
+        res.locals['bearer_token'] = bearerToken;
+    }
+
+    public async validateTokenMiddleware(req: Request, res: Response, next: NextFunction) {
+        /* no sense in checking for auth if there's no Authorization header, is there? */
+        if (!Object.hasOwn(req.headers, 'authorization')) {
+            console.log(req.headers.authorization);
+            return res.status(401).send(customError(401, 'Unauthorized', 'Missing authorization'));
+        }
+
+        /* check that the request has the firebase configuration name specified if we're handling more than one
+         * active configuration. If that's not the case, allow no configuration to be specified otherwise fail the request
+         */
+        if ((this.m_firebaseAccounts.size != 1) && (!Object.hasOwn(req.query, 'firbase_config'))) {
+            return res.status(400).send(customError(400, 'Bad request', 'Missing firebase config specification'));
+        }
+
+        const split = req.headers.authorization.split(' ');
+
+        if (split.length < 2) {
+            return res.status(400).send(customError(400, 'Bad request', 'Malformed authorization'));
+        }
+
+        const bearerToken = req.headers.authorization.split(' ')[1];
+        const firebastConfig = req.query.firebase_config ?? '';
+
+        if (bearerToken) {
+            // check if the token is already stashed
+            if (this.m_redisConnection) {
+                // TODO - freeze the key string used here
+                const decodedToken = await this.m_redisConnection.get(`firebase_aux_${bearerToken}`);
+
+                if (decodedToken) {
+                    const decodedObj: any = JSON.parse(decodedToken);
+                    console.log(decodedObj);
+                    this.populateResponseObject(res, decodedObj, bearerToken);
+                    // next();
+                } else {
+                    await this.lookupFirebaseUser(bearerToken, res, req.query.firebase_config as string ?? undefined);
+                }
+            } else {
+                // token is not stashed, pull from firebase
+                await this.lookupFirebaseUser(bearerToken, res, req.query.firebase_config as string ?? undefined);
+            }
+
+            // move on
+            next();
+        } else {
+            return res.status(400).send(customError(400, 'Bad request', 'Missing auth token'));
+        }
+    };
+}
 
 
 // NOTE: add `FirebaseAdminAux` ad default export?
 
 
-
-
-// const FirebaseAdmin = require("firebase-admin");
-// const chalk = require("chalk");
-// const JSONAPIError = require('jsonapi-serializer').Error;
-//
-//
-// function customError(code, title, message) {
-//     return new JSONAPIError({
-//         status: code,
-//         title: title,
-//         detail: message
-//     });
-// };
-//
-// function firebaseError(error) {
-//     let code = 400;
-//
-//     if (error.code == "auth/id-token-expired" || error.code == "auth/argument-error"
-//         || error.code == "auth/invalid-user-token" || error.code == "auth/user-token-expired") {
-//         code = 401;
-//     }
-//
-//     return new JSONAPIError({
-//         status: code,
-//         title: error.code,
-//         detail: error.message
-//     });
-// };
-//
-// let FirebaseAdminAux = (function () {
-//
-//
-//     function populateResponseObject(responseObject, decodedTokenObj, bearerToken) {
-//         responseObject.locals.firebase_uid = decodedTokenObj.user_id;
-//         responseObject.locals.decoded_token = decodedTokenObj;
-//         responseObject.locals.bearer_token = bearerToken;
-//     }
-//
-//     function requestVerification(bearerToken, res) {
-//         return new Promise((resolve, reject) => {
-//             app.auth().verifyIdToken(bearerToken).then((decodedToken) => {
-//                 console.log("[FirebaseAdminAux] %s", JSON.stringify(decodedToken));
-//
-//                 // Stash the token if redis cache is active
-//                 if (redisCache) {
-//                     redisAuxClient.setWithExpiry("firebase_aux_" + bearerToken, JSON.stringify(decodedToken), (decodedToken.exp - Math.round(new Date() / 1000))).then(() => {
-//                         resolve(decodedToken);
-//                     }).catch((error) => {
-//                         console.error(error);
-//                         reject(error);
-//                     });
-//                 } else {
-//                     resolve(decodedToken);
-//                 }
-//             }).catch((error) => {
-//                 console.error(error.toString());
-//                 let datError = firebaseError(error);
-//                 /*return */res.status(datError.errors[0].status).send(datError);
-//                 reject();
-//             });
-//         });
-//     }
-//     /**************************************************************/
 //
 //     function createUser(userEmail, userPassword) {
 //         return new Promise((resolve, reject) => {
@@ -229,64 +266,4 @@ export class FirebaseAdminAux {
 //             }
 //         });
 //     };
-//
-//     var validateToken = (req, res, next) => {
-//         if (!req.headers.authorization) {
-//             return res.status(401).send(customError(401, "Unauthorized", "Missing authorization"));
-//         }
-//
-//         let split = req.headers.authorization.split(' ');
-//
-//         if (split.length < 2) {
-//             return res.status(400).send(customError(400, "Bad request", "Malformed authorization"));
-//         }
-//
-//         let bearerToken = req.headers.authorization.split(' ')[1];
-//
-//         if (bearerToken) {
-//             // check if the token is already stashed
-//             if (redisCache) {
-//                 redisAuxClient.get("firebase_aux_" + bearerToken).then((decodedToken) => {
-//                     if (decodedToken) {
-//                         let decodedObj = JSON.parse(decodedToken);
-//
-//                         // token is present, already verified and has yet to expire
-//                         populateResponseObject(res, decodedObj, bearerToken);
-//                         next();
-//                     } else {
-//                         console.log("Token has expired! Request new verification");
-//                         requestVerification(bearerToken, res).then((decodedToken) => {
-//                             populateResponseObject(res, decodedToken, bearerToken);
-//                             next();
-//                         }).catch((firebaseError) => {
-//                             console.error(firebaseError);
-//                         });
-//                     }
-//                 }).catch((error) => {
-//                     console.error(error);
-//                 });
-//             } else {
-//                 requestVerification(bearerToken, res).then((decodedToken) => {
-//                     populateResponseObject(res, decodedToken, bearerToken);
-//                     next();
-//                 }).catch((error) => {
-//                     console.error(error);
-//                 });
-//             }
-//         } else {
-//             return res.status(400).send(customError(400, "Bad request", "Missing auth token"));
-//         }
-//     }
-//
-//     return {
-//         createUser: createUser,
-//         deleteUser: deleteUser,
-//         sendPushNotification: sendPushNotification,
-//         sendMultiplePushNotifications: sendMultiplePushNotifications,
-//         userExists: userExists,
-//         validateToken: validateToken,
-//         initialize
-//     }
-// })();
-//
-// module.exports = FirebaseAdminAux;
+
