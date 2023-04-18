@@ -16,22 +16,6 @@ function customError(status: number, title: string, message: string) : JSONAPIEr
 };
 
 
-// function firebaseError(error) {
-//     let code = 400;
-//
-//     if (error.code == "auth/id-token-expired" || error.code == "auth/argument-error"
-//         || error.code == "auth/invalid-user-token" || error.code == "auth/user-token-expired") {
-//         code = 401;
-//     }
-//
-//     return new JSONAPIError({
-//         status: code,
-//         title: error.code,
-//         detail: error.message
-//     });
-// };
-
-
 export interface FirebaseAccountConfig {
     name: string,               // key to identify the configuration with
     jsonCredentials: string     // json credentials of our firebase application
@@ -41,6 +25,26 @@ export interface FirebaseAdminObj {
     admin: App,
     auth: Auth,
     messaging: Messaging
+}
+
+export interface CreateUserData {
+    email: string,
+    emailVerified?: boolean,
+    password: string,
+    displayName?: string,
+    phoneNumber?: string,
+    photoURL?: string,
+    disabled?: boolean
+}
+
+export interface UpdateUserData {
+    email?: string,
+    emailVerified?: boolean,
+    password?: string,
+    displayName?: string,
+    phoneNumber?: string,
+    photoURL?: string,
+    disabled?: boolean
 }
 
 export class FirebaseAdminAux {
@@ -108,12 +112,7 @@ export class FirebaseAdminAux {
     }
 
     private async lookupFirebaseUser(bearerToken: string, res: Response, configName?: string) {
-        const firebaseAccount = configName ? this.account(configName) : this.m_firebaseAccounts.entries().next().value[1];
-
-        if (!firebaseAccount) {
-            throw new Error('account not found');
-        }
-
+        const firebaseAccount = this.getConfigAccountForFunctions(configName);
         const decodedToken = await firebaseAccount.auth.verifyIdToken(bearerToken);
 
         // do we have cache enabled?
@@ -182,38 +181,48 @@ export class FirebaseAdminAux {
             return res.status(400).send(customError(400, 'Bad request', 'Missing auth token'));
         }
     };
+
+
+
+    /****************************
+     * FIREBASE WRAPPER ACTIONS *
+     ****************************/
+    private getConfigAccountForFunctions(configName?: string) {
+        const firebaseAccount = configName ? this.account(configName) : this.m_firebaseAccounts.entries().next().value[1];
+
+        if (!firebaseAccount) {
+            throw new Error('account not found');
+        } else {
+            return firebaseAccount;
+            }
+    };
+
+    public async createUser(userData: CreateUserData, configName?: string) {
+        const firebaseAccount = this.getConfigAccountForFunctions(configName);
+        const userRecord = await firebaseAccount.auth.createUser(userData);
+
+        // console.log(userRecord);
+        return userRecord;
+    };
+
+    public async deleteUser(userFirebaseUid: string, configName?: string) {
+        const firebaseAccount = this.getConfigAccountForFunctions(configName);
+        await firebaseAccount.auth.deleteUser(userFirebaseUid);
+    }
+
+    public async getUser(userFirebaseUid: string, configName?: string) {
+        const firebaseAccount = this.getConfigAccountForFunctions(configName);
+        const userData = await firebaseAccount.auth.getUser(userFirebaseUid);
+        return userData;
+    }
+
+    public async updateUser(userFirebaseUid: string, userData: UpdateUserData, configName?: string) {
+        const firebaseAccount = this.getConfigAccountForFunctions(configName);
+        const userRecord = await firebaseAccount.auth.updateUser(userFirebaseUid, userData);
+        return userRecord;
+    }
 }
 
-
-// NOTE: add `FirebaseAdminAux` ad default export?
-
-
-//
-//     function createUser(userEmail, userPassword) {
-//         return new Promise((resolve, reject) => {
-//             app.auth().createUser({
-//                 email: userEmail,
-//                 password: userPassword
-//             }).then((userRecord) => {
-//                 // See the UserRecord reference doc for the contents of userRecord.
-//                 console.log("[FirabaseAdminAuth] Successfully created new user: %s", userRecord.uid);
-//                 resolve(userRecord);
-//             }).catch((error) => {
-//                 reject(error);
-//             });
-//         });
-//     }
-//
-//     function deleteUser(firebaseUid) {
-//         return new Promise((resolve, reject) => {
-//             app.auth().deleteUser(firebaseUid)
-//             .then(() => {
-//                 resolve();
-//             }).catch((error) => {
-//                 reject(error);
-//             });
-//         });
-//     };
 //
 //     function sendPushNotification(title, body, registrationToken) {
 //         let msg = {

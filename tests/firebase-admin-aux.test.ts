@@ -7,7 +7,7 @@ dotenv.config({
 
 import 'jest';
 import { faker } from '@faker-js/faker';
-import { FirebaseAdminAux } from '@lib/firebase-admin-aux';
+import { FirebaseAdminAux, CreateUserData, UpdateUserData } from '@lib/firebase-admin-aux';
 import sinon from 'sinon';
 import {/* Request, Response, */NextFunction } from 'express';
 // import UrlParser from 'url-parse';
@@ -217,4 +217,58 @@ describe('Test the FirebaseAdminAux authentication middleware NO CACHE', () => {
         // update my token
         m_token = mockRequest.locals.bearer_token;
     });
+});
+
+describe('Test the user operations', () => {
+    let nextFunction: NextFunction = jest.fn();
+    let mockRequest = httpMocks.createRequest({
+    });
+    let mockResponse = httpMocks.createResponse({});
+
+    const m_userCreateData : CreateUserData = {
+        email: faker.internet.email(),
+        displayName: faker.lorem.word(),
+        password: faker.internet.password()
+    };
+
+    const m_userUpdateData: UpdateUserData = {
+        displayName: faker.lorem.word(),
+        phoneNumber: faker.phone.number('+4891#######'),
+        emailVerified: true
+    };
+
+    let m_userFirebaseUid;
+
+    console.log(m_userUpdateData);
+
+    beforeEach(() => {
+        mockRequest.headers = {};
+        mockRequest.query = {};
+        mockResponse.statusCode = undefined;
+    });
+
+    it('Should create a new user', async () => {
+        const rec = await m_fbAdminAux.createUser(m_userCreateData);
+
+        expect(rec.email).toBe(m_userCreateData.email.toLowerCase());
+        expect(rec.displayName).toBe(m_userCreateData.displayName);
+
+        m_userFirebaseUid = rec.uid;
+    });
+
+    it('Should update a user and check new data is correctly stored on firebase', async () => {
+        await m_fbAdminAux.updateUser(m_userFirebaseUid, m_userUpdateData);
+        const user = await m_fbAdminAux.getUser(m_userFirebaseUid);
+
+        expect(user.displayName).toBe(m_userUpdateData.displayName);
+        expect(user.phoneNumber).toBe(m_userUpdateData.phoneNumber);
+        expect(user.emailVerified).toBe(m_userUpdateData.emailVerified);
+    });
+
+    it('Should delete the newly created user', async () => {
+        await m_fbAdminAux.deleteUser(m_userFirebaseUid);
+        expect('all is well').toBe('all is well');
+    });
+
+
 });
