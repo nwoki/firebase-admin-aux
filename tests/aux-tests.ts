@@ -6,7 +6,7 @@ dotenv.config({
 })
 
 
-export async function getToken(firebaseKey: string = process.env.FIREBASE_KEY as string,
+export async function getToken(firebaseKey: string = process.env.FIREBASE_TEST_KEY as string,
                                email: string = process.env.FIREBASE_TEST_ACCOUNT as string,
                                password: string = process.env.FIREBASE_TEST_PASSWORD as string) {
 

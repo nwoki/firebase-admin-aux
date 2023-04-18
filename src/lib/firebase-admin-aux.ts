@@ -124,10 +124,16 @@ export class FirebaseAdminAux {
         this.populateResponseObject(res, decodedToken, bearerToken);
     }
 
+    /**
+     * NOTE: put this info in a sub object? Something that identifies that the info is from this lib? Maybe an object
+     * called 'firebase_admin_aux {}' ?
+     */
     private populateResponseObject(res: Response, decodedTokenObj: any, bearerToken: string) {
-        res.locals['firebase_uid'] = decodedTokenObj.user_id;
+        res.locals['firebase_uid'] = decodedTokenObj.uid;
         res.locals['decoded_token'] = decodedTokenObj;
         res.locals['bearer_token'] = bearerToken;
+        res.locals['email'] = decodedTokenObj.email;
+        res.locals['email_verified'] = decodedTokenObj.email_verified;
     }
 
     public async validateTokenMiddleware(req: Request, res: Response, next: NextFunction) {
@@ -161,9 +167,7 @@ export class FirebaseAdminAux {
 
                 if (decodedToken) {
                     const decodedObj: any = JSON.parse(decodedToken);
-                    console.log(decodedObj);
                     this.populateResponseObject(res, decodedObj, bearerToken);
-                    // next();
                 } else {
                     await this.lookupFirebaseUser(bearerToken, res, req.query.firebase_config as string ?? undefined);
                 }

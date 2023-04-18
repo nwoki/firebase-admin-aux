@@ -15,7 +15,11 @@ import httpMocks from 'node-mocks-http';
 import { getToken } from './aux-tests';
 
 let m_fbAdminAux;
+let m_fbAdminAuxNoCache;
+
 const m_fbAdminConfigName = faker.lorem.word();
+const m_fbAdminNoCacheConfigName = faker.lorem.word();
+
 let m_token;
 
 
@@ -42,11 +46,17 @@ const mockRequest = (queryData) => {
 beforeAll(async () => {
     // Prepare the firebase account with default redis url (localhost)
     m_fbAdminAux = new FirebaseAdminAux(true);
+    m_fbAdminAuxNoCache = new FirebaseAdminAux(false);
+
 
     // NOTE: this is already part of the test. Should not create two configurations with the same name
     await m_fbAdminAux.init([
         { name: m_fbAdminConfigName, jsonCredentials: process.env.FIREBASE_TEST_JSON},
         { name: m_fbAdminConfigName, jsonCredentials: process.env.FIREBASE_TEST_JSON}
+    ]);
+
+    await m_fbAdminAuxNoCache.init([
+        { name: m_fbAdminNoCacheConfigName, jsonCredentials: process.env.FIREBASE_TEST_JSON}
     ]);
 
     m_token = await getToken();
@@ -56,13 +66,6 @@ beforeAll(async () => {
 afterAll(async () => {
     console.log("---AFTER ALL---");
 });
-
-describe('Test the queue process validator', () => {
-    it('Stub test', async () => {
-        expect(1).toBe(1);
-    });
-});
-
 
 describe('Test the FirebaseAdminAux setup', () => {
     it('Should not re-initialize the same object - used for code coverage', async () => {
@@ -140,7 +143,7 @@ describe('Test the FirebaseAdminAux authentication middleware', () => {
         }
     });
 
-    it('Should not pull firebase user info as the bearer token is incorrect', async () => {
+    it('Should not pull firebase user info through validation middleware as the bearer token is incorrect', async () => {
         mockRequest.headers = {
             authorization: `Bearer ${faker.datatype.uuid()}`
         };
@@ -153,18 +156,20 @@ describe('Test the FirebaseAdminAux authentication middleware', () => {
         }
     });
 
-    it('Should not pull firebase user info as the login is incorrect', async () => {
+    it('Should pull firebase user info through validation middleware', async () => {
         mockRequest.headers = {
             authorization: `Bearer ${m_token}`
         };
         mockRequest.locals = {};
 
         await m_fbAdminAux.validateTokenMiddleware(mockRequest, mockRequest, nextFunction);
-        expect(mockRequest.locals.firebase_uid).not.toBe(null);
+        expect(mockRequest.locals.firebase_uid).toBe(process.env.FIREBASE_TEST_UID as string);
         expect(mockRequest.locals.decoded_token).not.toBe(null);
         expect(typeof mockRequest.locals.decoded_token).toBe('object');
         expect(mockRequest.locals.bearer_token).not.toBe(null);
         expect(typeof mockRequest.locals.bearer_token).toBe('string');
+        expect(nextFunction).toHaveBeenCalledTimes(1);
+        expect(mockRequest.locals.email).toBe(process.env.FIREBASE_TEST_ACCOUNT as string);
 
         // update my token
         m_token = mockRequest.locals.bearer_token;
@@ -177,7 +182,39 @@ describe('Test the FirebaseAdminAux authentication middleware', () => {
         mockRequest.locals = {};
 
         await m_fbAdminAux.validateTokenMiddleware(mockRequest, mockRequest, nextFunction);
-
         expect(mockRequest.locals).not.toBe(null);
+        expect(mockRequest.locals.firebase_uid).toBe(process.env.FIREBASE_TEST_UID as string);
+    });
+});
+
+
+describe('Test the FirebaseAdminAux authentication middleware NO CACHE', () => {
+    let nextFunction: NextFunction = jest.fn();
+    let mockRequest = httpMocks.createRequest({
+    });
+    let mockResponse = httpMocks.createResponse({});
+
+    beforeEach(() => {
+        mockRequest.headers = {};
+        mockRequest.query = {};
+        mockResponse.statusCode = undefined;
+    });
+
+    it('Should pull firebase user info through validation middleware (NO CACHE)', async () => {
+        mockRequest.headers = {
+            authorization: `Bearer ${m_token}`
+        };
+        mockRequest.locals = {};
+
+        await m_fbAdminAuxNoCache.validateTokenMiddleware(mockRequest, mockRequest, nextFunction);
+        expect(mockRequest.locals.firebase_uid).toBe(process.env.FIREBASE_TEST_UID as string);
+        expect(mockRequest.locals.decoded_token).not.toBe(null);
+        expect(typeof mockRequest.locals.decoded_token).toBe('object');
+        expect(mockRequest.locals.bearer_token).not.toBe(null);
+        expect(typeof mockRequest.locals.bearer_token).toBe('string');
+        expect(nextFunction).toHaveBeenCalledTimes(1);
+
+        // update my token
+        m_token = mockRequest.locals.bearer_token;
     });
 });
