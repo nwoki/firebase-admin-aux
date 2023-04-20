@@ -1,17 +1,35 @@
 {
-  "name": "firebase-admin-aux",
-  "version": "2.0.0",
+  "name": "@nwoki/firebase-admin-aux",
+  "version": "3.0.0",
   "description": "Custom module to simplify recurring tasks with the Firabase Admin SDK",
   "main": "lib/firebase-admin-aux.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npx tsc && npx tsc-alias",
+    "test": "NODE_ENV=test jest --forceExit --detectOpenHandles --maxWorkers=1 --verbose=true --coverage"
   },
   "author": "Francesco Nwokeka <francesco.nwokeka@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "chalk": "^4.1.1",
-    "firebase-admin": "^9.8.0",
+    "firebase-admin": "^11.5.0",
+    "ioredis": "^5.3.1",
     "jsonapi-serializer": "^3.6.7",
-    "redis-client-aux": "git+https://github.com/nwoki/redis-client-aux.git#8795e13ef56de898fe6b75610635f5552e48df3f"
+    "url-parse": "^1.5.10"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^7.6.0",
+    "@jest/types": "^29.5.0",
+    "@types/express": "^4.17.17",
+    "@types/jest": "^29.5.0",
+    "@types/node": "^18.15.10",
+    "dotenv": "^16.0.3",
+    "jest": "^29.5.0",
+    "jest-junit": "^15.0.0",
+    "node-mocks-http": "^1.12.2",
+    "sinon": "^15.0.3",
+    "supertest": "^6.3.3",
+    "ts-jest": "^29.0.5",
+    "ts-node": "^10.9.1",
+    "tsc-alias": "^1.8.4",
+    "typescript": "^5.0.2"
   }
 }
