@@ -56,13 +56,9 @@ export class FirebaseAdminAux {
     private m_initialized: boolean = false;
     private m_redisConnection: RedisConnection;// = undefined;// = new RedisConnection();
 
-    constructor(withCache?: boolean, redisUrl?: string) {
+    constructor(withCache?: boolean) {
         if (withCache) {
-            if (!redisUrl) {
-                redisUrl = process.env.REDIS_CACHE_URL ?? process.env.REDIS_URL as string ?? 'redis://localhost:6379';
-            }
-
-            this.m_redisConnection = new RedisConnection(redisUrl, 'FirebaseAdminAux');
+            this.m_redisConnection = new RedisConnection(null, 'FirebaseAdminAux');
         }
 
         // https://cloud.google.com/blog/products/containers-kubernetes/kubernetes-best-practices-terminating-with-grace

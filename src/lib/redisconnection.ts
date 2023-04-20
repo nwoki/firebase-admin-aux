@@ -10,7 +10,7 @@ import UrlParse from 'url-parse';
 // NOTE: no need to export it at the moment
 /*export */function getRedisOption(url?: string, name?: string) {
     if (!url) {
-        url = process.env.REDIS_URL_QUEUE ?? process.env.REDIS_URL as string;
+        url = process.env.REDIS_CACHE_URL as string ?? process.env.REDIS_URL as string;
     }
     const connName = name ?? 'Redis ' + url;
     const connNameLog = '[' + connName + '] ';

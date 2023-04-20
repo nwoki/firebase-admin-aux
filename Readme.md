@@ -4,13 +4,13 @@
 
 A simple nodejs module for performing custom and most common tasks using the firebase admin sdk. It has the possibility to cache user authentication
 info to avoid constantly polling the firebase servers. In order to do this, you'll have to provide the redis connection url and port via
-environment variable: `REDIS_URL` (`redis://<host>:<port>`)
+environment variable: `REDIS_CACHE_URL` (`redis://<host>:<port>`)
 
 ## Environment variables
 
 ```
 FIREBASE_AUTH_JSON
-REDIS_URL
+REDIS_CACHE_URL
 ```
 
 # For testing purposes, integrate with the following
