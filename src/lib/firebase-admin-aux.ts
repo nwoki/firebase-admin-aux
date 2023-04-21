@@ -141,7 +141,7 @@ export class FirebaseAdminAux {
         /* check that the request has the firebase configuration name specified if we're handling more than one
          * active configuration. If that's not the case, allow no configuration to be specified otherwise fail the request
          */
-        if ((this.m_firebaseAccounts.size != 1) && (!Object.hasOwn(req.query, 'firbase_config'))) {
+        if ((this.m_firebaseAccounts.size != 1) && (!Object.hasOwn(req.query, 'firebase_config'))) {
             return res.status(400).send(customError(400, 'Bad request', 'Missing firebase config specification'));
         }
 

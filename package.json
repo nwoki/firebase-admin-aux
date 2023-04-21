@@ -9,6 +9,13 @@
   },
   "author": "Francesco Nwokeka <francesco.nwokeka@gmail.com>",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nwoki/firebase-admin-aux.git"
+  },
+  "files": [
+    "dist/*"
+  ],
   "dependencies": {
     "firebase-admin": "^11.5.0",
     "ioredis": "^5.3.1",
