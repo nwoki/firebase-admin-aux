@@ -56,6 +56,8 @@ export class FirebaseAdminAux {
     private m_initialized: boolean = false;
     private m_redisConnection: RedisConnection;// = undefined;// = new RedisConnection();
 
+    private static m_singletonInstance: FirebaseAdminAux = null;
+
     constructor(withCache?: boolean) {
         if (withCache) {
             this.m_redisConnection = new RedisConnection(null, 'FirebaseAdminAux');
@@ -69,6 +71,15 @@ export class FirebaseAdminAux {
             await this.m_redisConnection.client().quit();
             process.exit();
         });
+    }
+
+    public static getInstance() {
+        if (!FirebaseAdminAux.m_singletonInstance) {
+            // NOTE: better off throwing an error or should we just return a null?
+            throw new Error('FirebaseAdminAux not initialized');
+        } else {
+            return FirebaseAdminAux.m_singletonInstance;
+        }
     }
 
     public async init(configs: FirebaseAccountConfig[]) {
@@ -97,6 +108,8 @@ export class FirebaseAdminAux {
             await this.m_redisConnection.init();
         }
 
+        console.log('done initializing');
+        FirebaseAdminAux.m_singletonInstance = this;
         this.m_initialized = true;
     }
 
