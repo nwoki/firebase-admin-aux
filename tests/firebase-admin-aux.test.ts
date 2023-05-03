@@ -53,7 +53,7 @@ afterAll(async () => {
 describe('Test FirebaseAdminAux singleton veridicity', () => {
     it('Should fail due to init not having been called', async () => {
         try {
-            FirebaseAdminAux.getInstance();
+            FirebaseAdminAux.instance();
         } catch (error: any) {
             expect(error.message).toBe('FirebaseAdminAux not initialized');
         }
@@ -69,7 +69,7 @@ describe('Test FirebaseAdminAux singleton veridicity', () => {
                 { name: m_fbAdminConfigName, jsonCredentials: process.env.FIREBASE_TEST_JSON}
             ]);
 
-            expect(FirebaseAdminAux.getInstance()).not.toBe(null);
+            expect(FirebaseAdminAux.instance()).not.toBe(null);
         } catch (error: any) {
             expect(error).toBe(null);
         }

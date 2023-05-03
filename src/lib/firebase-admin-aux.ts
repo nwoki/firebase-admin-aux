@@ -73,7 +73,7 @@ export class FirebaseAdminAux {
         });
     }
 
-    public static getInstance() {
+    public static instance() {
         if (!FirebaseAdminAux.m_singletonInstance) {
             // NOTE: better off throwing an error or should we just return a null?
             throw new Error('FirebaseAdminAux not initialized');
