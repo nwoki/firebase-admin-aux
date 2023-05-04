@@ -217,6 +217,12 @@ export class FirebaseAdminAux {
         const userRecord = await firebaseAccount.auth.updateUser(userFirebaseUid, userData);
         return userRecord;
     }
+
+    public async userExists(userEmail: string, configName?: string) {
+        const firebaseAccount = this.getConfigAccountForFunctions(configName);
+        const userRecord = await firebaseAccount.auth.getUserByEmail(userEmail);
+        return userRecord;
+    }
 }
 
 //
