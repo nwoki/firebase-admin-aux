@@ -256,6 +256,12 @@ describe('Test the user operations', () => {
         m_userFirebaseUid = rec.uid;
     });
 
+    it('Should check the existance of a user on firebase', async () => {
+        const user = await m_fbAdminAux.userExists(m_userCreateData.email);
+
+        expect(user.displayName).toBe(m_userCreateData.displayName);
+    });
+
     it('Should update a user and check new data is correctly stored on firebase', async () => {
         await m_fbAdminAux.updateUser(m_userFirebaseUid, m_userUpdateData);
         const user = await m_fbAdminAux.getUser(m_userFirebaseUid);

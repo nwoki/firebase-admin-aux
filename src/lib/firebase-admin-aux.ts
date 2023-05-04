@@ -217,6 +217,12 @@ export class FirebaseAdminAux {
         const userRecord = await firebaseAccount.auth.updateUser(userFirebaseUid, userData);
         return userRecord;
     }
+
+    public async userExists(userEmail: string, configName?: string) {
+        const firebaseAccount = this.getConfigAccountForFunctions(configName);
+        const userRecord = await firebaseAccount.auth.getUserByEmail(userEmail);
+        return userRecord;
+    }
 }
 
 //
@@ -259,20 +265,6 @@ export class FirebaseAdminAux {
 //         })
 //         .catch((error) => {
 //             console.log('Error sending message:', error);
-//         });
-//     };
-//
-//     function userExists(userEmail) {
-//         return new Promise((resolve, reject) => {
-//             if (!app) {
-//                 reject(new Error("[FirabaseAdminAuth] You must initialize the module first!"));
-//             } else {
-//                 app.auth().getUserByEmail(userEmail).then((user) => {
-//                     resolve(user);
-//                 }).catch((error) => {
-//                     reject(error);
-//                 });
-//             }
 //         });
 //     };
 
