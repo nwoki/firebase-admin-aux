@@ -148,7 +148,7 @@ describe('Test the FirebaseAdminAux authentication middleware', () => {
         try {
             await m_fbAdminAux.validateTokenMiddleware(mockRequest, mockRequest, nextFunction);
         } catch (error: any) {
-            expect(error.message).toBe('account not found');
+            expect(error.message).toBe('FirebaseAdminAux account not found');
         }
     });
 
