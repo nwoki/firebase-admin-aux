@@ -267,18 +267,4 @@ export class FirebaseAdminAux {
 //             console.log('Error sending message:', error);
 //         });
 //     };
-//
-//     function userExists(userEmail) {
-//         return new Promise((resolve, reject) => {
-//             if (!app) {
-//                 reject(new Error("[FirabaseAdminAuth] You must initialize the module first!"));
-//             } else {
-//                 app.auth().getUserByEmail(userEmail).then((user) => {
-//                     resolve(user);
-//                 }).catch((error) => {
-//                     reject(error);
-//                 });
-//             }
-//         });
-//     };
 
