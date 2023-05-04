@@ -63,6 +63,8 @@ export class FirebaseAdminAux {
             this.m_redisConnection = new RedisConnection(null, 'FirebaseAdminAux');
         }
 
+        FirebaseAdminAux.m_singletonInstance = this;
+
         // https://cloud.google.com/blog/products/containers-kubernetes/kubernetes-best-practices-terminating-with-grace
         process.on('SIGTERM', async () => {
             console.info('SIGTERM signal received.');
@@ -75,8 +77,7 @@ export class FirebaseAdminAux {
 
     public static instance() {
         if (!FirebaseAdminAux.m_singletonInstance) {
-            // NOTE: better off throwing an error or should we just return a null?
-            throw new Error('FirebaseAdminAux not initialized');
+            this.m_singletonInstance = new FirebaseAdminAux();
         } else {
             return FirebaseAdminAux.m_singletonInstance;
         }
@@ -109,7 +110,6 @@ export class FirebaseAdminAux {
         }
 
         console.log('done initializing');
-        FirebaseAdminAux.m_singletonInstance = this;
         this.m_initialized = true;
     }
 
@@ -197,10 +197,14 @@ export class FirebaseAdminAux {
      * FIREBASE WRAPPER ACTIONS *
      ****************************/
     private getConfigAccountForFunctions(configName?: string) {
+        if (!this.m_initialized) {
+            throw new Error('FirebaseAdminAux not initialized');
+        }
+
         const firebaseAccount = configName ? this.account(configName) : this.m_firebaseAccounts.entries().next().value[1];
 
         if (!firebaseAccount) {
-            throw new Error('account not found');
+            throw new Error('FirebaseAdminAux account not found');
         } else {
             return firebaseAccount;
             }
