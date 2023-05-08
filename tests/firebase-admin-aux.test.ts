@@ -55,7 +55,7 @@ describe('Test FirebaseAdminAux singleton veridicity', () => {
         try {
             FirebaseAdminAux.instance();
         } catch (error: any) {
-            expect(error.message).toBe('FirebaseAdminAux not initialized');
+            expect(error.message).toBe('FirebaseAdminAux: singleton instance is not set');
         }
 
         // expect(FirebaseAdminAux.getInstance()).toBe(null);
@@ -68,6 +68,8 @@ describe('Test FirebaseAdminAux singleton veridicity', () => {
                 { name: m_fbAdminConfigName, jsonCredentials: process.env.FIREBASE_TEST_JSON},
                 { name: m_fbAdminConfigName, jsonCredentials: process.env.FIREBASE_TEST_JSON}
             ]);
+
+            FirebaseAdminAux.setInstance(m_fbAdminAux);
 
             expect(FirebaseAdminAux.instance()).not.toBe(null);
         } catch (error: any) {
@@ -146,7 +148,7 @@ describe('Test the FirebaseAdminAux authentication middleware', () => {
         }
 
         try {
-            await m_fbAdminAux.validateTokenMiddleware(mockRequest, mockRequest, nextFunction);
+            await m_fbAdminAux.validateTokenMiddleware(mockRequest, mockResponse, nextFunction);
         } catch (error: any) {
             expect(error.message).toBe('FirebaseAdminAux account not found');
         }
@@ -159,7 +161,7 @@ describe('Test the FirebaseAdminAux authentication middleware', () => {
         mockRequest.locals = {};
 
         try {
-            await m_fbAdminAux.validateTokenMiddleware(mockRequest, mockRequest, nextFunction);
+            await m_fbAdminAux.validateTokenMiddleware(mockRequest, mockResponse, nextFunction);
         } catch (error: any) {
             expect(error.message).not.toBe(null);
         }
@@ -171,28 +173,29 @@ describe('Test the FirebaseAdminAux authentication middleware', () => {
         };
         mockRequest.locals = {};
 
-        await m_fbAdminAux.validateTokenMiddleware(mockRequest, mockRequest, nextFunction);
-        expect(mockRequest.locals.firebase_uid).toBe(process.env.FIREBASE_TEST_UID as string);
-        expect(mockRequest.locals.decoded_token).not.toBe(null);
-        expect(typeof mockRequest.locals.decoded_token).toBe('object');
-        expect(mockRequest.locals.bearer_token).not.toBe(null);
-        expect(typeof mockRequest.locals.bearer_token).toBe('string');
+        await m_fbAdminAux.validateTokenMiddleware(mockRequest, mockResponse, nextFunction);
+
+        expect(mockResponse.locals.firebase_uid).toBe(process.env.FIREBASE_TEST_UID as string);
+        expect(mockResponse.locals.decoded_token).not.toBe(null);
+        expect(typeof mockResponse.locals.decoded_token).toBe('object');
+        expect(mockResponse.locals.bearer_token).not.toBe(null);
+        expect(typeof mockResponse.locals.bearer_token).toBe('string');
         expect(nextFunction).toHaveBeenCalledTimes(1);
-        expect(mockRequest.locals.email).toBe(process.env.FIREBASE_TEST_ACCOUNT as string);
+        expect(mockResponse.locals.email).toBe(process.env.FIREBASE_TEST_ACCOUNT as string);
 
         // update my token
-        m_token = mockRequest.locals.bearer_token;
+        m_token = mockResponse.locals.bearer_token;
     });
 
     it('Should pull info from redis cache', async () => {
         mockRequest.headers = {
             authorization: `Bearer ${m_token}`
         };
-        mockRequest.locals = {};
+        mockResponse.locals = {};
 
-        await m_fbAdminAux.validateTokenMiddleware(mockRequest, mockRequest, nextFunction);
-        expect(mockRequest.locals).not.toBe(null);
-        expect(mockRequest.locals.firebase_uid).toBe(process.env.FIREBASE_TEST_UID as string);
+        await m_fbAdminAux.validateTokenMiddleware(mockRequest, mockResponse, nextFunction);
+        expect(mockResponse.locals).not.toBe(null);
+        expect(mockResponse.locals.firebase_uid).toBe(process.env.FIREBASE_TEST_UID as string);
     });
 });
 

@@ -36,6 +36,9 @@ await m_fbAdminAux.init([
     ...
 ]);
 
+// set the instance so we don't go creating extra copies around the project
+FirebaseAdminAux.setInstance(m_fbAdminAux);
+
 
 // Now you can operate on the m_fbAdminAux instance
 ```

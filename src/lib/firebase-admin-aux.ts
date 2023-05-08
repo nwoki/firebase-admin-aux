@@ -54,33 +54,46 @@ export class FirebaseAdminAux {
      */
     private m_firebaseAccounts = new Map<string, FirebaseAdminObj>;
     private m_initialized: boolean = false;
-    private m_redisConnection: RedisConnection;// = undefined;// = new RedisConnection();
+    private m_redisConnection: RedisConnection|undefined;// = undefined;// = new RedisConnection();
 
-    private static m_singletonInstance: FirebaseAdminAux = null;
+    private static m_singletonInstance: FirebaseAdminAux|undefined;
+
+    /**
+     * set a singleton instance
+     * @param instance
+     */
+    public static setInstance(instance: FirebaseAdminAux) {
+        if (FirebaseAdminAux.m_singletonInstance) {
+            throw new Error("singleton instance is already set");
+        }
+        FirebaseAdminAux.m_singletonInstance = instance;
+    }
+
+    /**
+     * get singleton instance
+     * @returns FirebaseAdminAux
+     */
+    public static instance(): FirebaseAdminAux {
+        if (!FirebaseAdminAux.m_singletonInstance) {
+            throw new Error('FirebaseAdminAux: singleton instance is not set');
+        }
+        return FirebaseAdminAux.m_singletonInstance;
+    }
 
     constructor(withCache?: boolean) {
         if (withCache) {
             this.m_redisConnection = new RedisConnection(null, 'FirebaseAdminAux');
         }
 
-        FirebaseAdminAux.m_singletonInstance = this;
-
         // https://cloud.google.com/blog/products/containers-kubernetes/kubernetes-best-practices-terminating-with-grace
         process.on('SIGTERM', async () => {
             console.info('SIGTERM signal received.');
-            console.info('Closing open Redis connections (if any)');
-
-            await this.m_redisConnection.client().quit();
+            if (this.m_redisConnection) {
+                console.info('Closing open Redis connections (if any)');
+                await this.m_redisConnection.client().quit();
+            }
             process.exit();
         });
-    }
-
-    public static instance() {
-        if (!FirebaseAdminAux.m_singletonInstance) {
-            this.m_singletonInstance = new FirebaseAdminAux();
-        } else {
-            return FirebaseAdminAux.m_singletonInstance;
-        }
     }
 
     public async init(configs: FirebaseAccountConfig[]) {
@@ -109,8 +122,8 @@ export class FirebaseAdminAux {
             await this.m_redisConnection.init();
         }
 
-        console.log('done initializing');
         this.m_initialized = true;
+        console.log('FirebaseAdminAux initializing done');
     }
 
     /**
@@ -165,27 +178,30 @@ export class FirebaseAdminAux {
         }
 
         const bearerToken = req.headers.authorization.split(' ')[1];
-        const firebastConfig = req.query.firebase_config ?? '';
-
         if (bearerToken) {
-            // check if the token is already stashed
-            if (this.m_redisConnection) {
-                // TODO - freeze the key string used here
-                const decodedToken = await this.m_redisConnection.get(`firebase_aux_${bearerToken}`);
+            try {
+                // check if the token is already stashed
+                if (this.m_redisConnection) {
+                    // TODO - freeze the key string used here
+                    const decodedToken = await this.m_redisConnection.get(`firebase_aux_${bearerToken}`);
 
-                if (decodedToken) {
-                    const decodedObj: any = JSON.parse(decodedToken);
-                    this.populateResponseObject(res, decodedObj, bearerToken);
+                    if (decodedToken) {
+                        const decodedObj: any = JSON.parse(decodedToken);
+                        this.populateResponseObject(res, decodedObj, bearerToken);
+                    } else {
+                        await this.lookupFirebaseUser(bearerToken, res, req.query.firebase_config as string ?? undefined);
+                    }
                 } else {
+                    // token is not stashed, pull from firebase
                     await this.lookupFirebaseUser(bearerToken, res, req.query.firebase_config as string ?? undefined);
                 }
-            } else {
-                // token is not stashed, pull from firebase
-                await this.lookupFirebaseUser(bearerToken, res, req.query.firebase_config as string ?? undefined);
-            }
 
-            // move on
-            next();
+                // move on
+                next();
+            } catch (error) {
+                console.error(error);
+                return res.status(400).send(customError(400, 'Bad request', 'Error processing bearerToken: ' + error.message));
+            }
         } else {
             return res.status(400).send(customError(400, 'Bad request', 'Missing auth token'));
         }
@@ -207,7 +223,7 @@ export class FirebaseAdminAux {
             throw new Error('FirebaseAdminAux account not found');
         } else {
             return firebaseAccount;
-            }
+        }
     };
 
     public async createUser(userData: CreateUserData, configName?: string) {
