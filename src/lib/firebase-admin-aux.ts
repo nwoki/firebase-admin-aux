@@ -74,9 +74,13 @@ export class FirebaseAdminAux {
      * @returns FirebaseAdminAux
      */
     public static instance(): FirebaseAdminAux {
-        if (!FirebaseAdminAux.m_singletonInstance) {
-            throw new Error('FirebaseAdminAux: singleton instance is not set');
-        }
+        // if (!FirebaseAdminAux.m_singletonInstance) {
+        //     // throw new Error('FirebaseAdminAux: singleton instance is not set');
+
+        //     // or return null?
+        //     return null;
+        // }
+        // return FirebaseAdminAux.m_singletonInstance;
         return FirebaseAdminAux.m_singletonInstance;
     }
 
@@ -96,7 +100,7 @@ export class FirebaseAdminAux {
         });
     }
 
-    public async init(configs: FirebaseAccountConfig[]) {
+    public async init(configs: FirebaseAccountConfig[]) : Promise<void> {
         if (this.m_initialized) {
             console.log('FirebaseAdminAux already initialized!');
             return;
@@ -131,6 +135,10 @@ export class FirebaseAdminAux {
      */
     public account(configName: string): FirebaseAdminObj | undefined {
         return this.m_firebaseAccounts.get(configName);
+    }
+
+    public accounts(): Map<string, FirebaseAdminObj> {
+        return this.m_firebaseAccounts;
     }
 
     private async lookupFirebaseUser(bearerToken: string, res: Response, configName?: string) {

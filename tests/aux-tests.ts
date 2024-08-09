@@ -1,31 +1,36 @@
-import * as dotenv from 'dotenv';
-import request from 'supertest';
+// import * as dotenv from 'dotenv';
+import 'dotenv/config';
+import request, { Response } from 'supertest';
 
-dotenv.config({
+require('dotenv').config({
     path: './.env.test'
 })
 
 
 export async function getToken(firebaseKey: string = process.env.FIREBASE_TEST_KEY as string,
                                email: string = process.env.FIREBASE_TEST_ACCOUNT as string,
-                               password: string = process.env.FIREBASE_TEST_PASSWORD as string) {
-
-    const tokenMap = new Map();
-    const keyMap = firebaseKey + email + password;
-
+                               password: string = process.env.FIREBASE_TEST_PASSWORD as string) : Promise<string | any> {
+    const tokenMap = new Map<string, string>();
+    const keyMap: string = firebaseKey + email + password;
     const cachedToken = tokenMap.get(keyMap);
-    if (cachedToken) return cachedToken;
 
-    const token = await new Promise((resolve, reject) => {
-        request('https://www.googleapis.com')
-        .post(`/identitytoolkit/v3/relyingparty/verifyPassword?key=${firebaseKey}`)
-        .send({ email, password, returnSecureToken: true })
-        .end((err, res) => {
-            if (err) reject(err);
-            resolve(res.body.idToken);
+    if (cachedToken) {
+        return cachedToken;
+    } else {
+        const token: string = await new Promise((resolve, reject) => {
+            request('https://www.googleapis.com')
+            .post(`/identitytoolkit/v3/relyingparty/verifyPassword?key=${firebaseKey}`)
+            .send({ email, password, returnSecureToken: true })
+            .end((err, res: Response) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(res.body.idToken as string);
+                }
+            });
         });
-    });
 
-    tokenMap.set(keyMap, token);
-    return token;
+        tokenMap.set(keyMap, token);
+        return token;
+    }
 }
