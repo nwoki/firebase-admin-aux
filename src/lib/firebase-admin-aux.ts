@@ -6,6 +6,7 @@ import { RedisConnection } from './redisconnection';
 import UrlParse from 'url-parse';
 import { Request, Response, NextFunction } from 'express';
 import { Error as JSONAPIError } from 'jsonapi-serializer';
+import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 
 function customError(status: number, title: string, message: string) : JSONAPIError {
     return new JSONAPIError({
@@ -173,20 +174,20 @@ export class FirebaseAdminAux {
         /* no sense in checking for auth if there's no Authorization header, is there? */
         if (!Object.hasOwn(req.headers, 'authorization')) {
             console.log(req.headers.authorization);
-            return res.status(401).send(customError(401, 'Unauthorized', 'Missing authorization'));
+            return res.status(StatusCodes.UNAUTHORIZED).send(customError(StatusCodes.UNAUTHORIZED, ReasonPhrases.UNAUTHORIZED, 'Missing authorization'));
         }
 
         /* check that the request has the firebase configuration name specified if we're handling more than one
          * active configuration. If that's not the case, allow no configuration to be specified otherwise fail the request
          */
         if ((this.m_firebaseAccounts.size != 1) && (!Object.hasOwn(req.query, 'firebase_config'))) {
-            return res.status(400).send(customError(400, 'Bad request', 'Missing firebase config specification'));
+            return res.status(StatusCodes.BAD_REQUEST).send(customError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST, 'Missing firebase config specification'));
         }
 
         const split = req.headers.authorization.split(' ');
 
         if (split.length < 2) {
-            return res.status(400).send(customError(400, 'Bad request', 'Malformed authorization'));
+            return res.status(StatusCodes.BAD_REQUEST).send(customError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST, 'Malformed authorization'));
         }
 
         const bearerToken = req.headers.authorization.split(' ')[1];
@@ -212,10 +213,10 @@ export class FirebaseAdminAux {
                 next();
             } catch (error) {
                 console.error(error);
-                return res.status(400).send(customError(400, 'Bad request', 'Error processing bearerToken: ' + error.message));
+                return res.status(StatusCodes.BAD_REQUEST).send(customError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST, 'Error processing bearerToken: ' + error.message));
             }
         } else {
-            return res.status(400).send(customError(400, 'Bad request', 'Missing auth token'));
+            return res.status(StatusCodes.BAD_REQUEST).send(customError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST, 'Missing auth token'));
         }
     };
 

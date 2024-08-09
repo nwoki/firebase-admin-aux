@@ -18,6 +18,7 @@
   ],
   "dependencies": {
     "firebase-admin": "^12.3.1",
+    "http-status-codes": "^2.3.0",
     "ioredis": "^5.4.1",
     "jsonapi-serializer": "^3.6.9",
     "url-parse": "^1.5.10"
