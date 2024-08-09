@@ -13,13 +13,13 @@ FIREBASE_AUTH_JSON
 REDIS_CACHE_URL
 ```
 
-# For testing purposes, integrate with the following
+# For testing purposes, integrate with the following (used as test user)
 ```
-FIREBASE_TEST_JSON
-FIREBASE_TEST_ACCOUNT
-FIREBASE_TEST_PASSWORD
-FIREBASE_TEST_KEY
-FIREBASE_TEST_UID
+FIREBASE_TEST_JSON  - firebase test auth json
+FIREBASE_TEST_ACCOUNT - firebase test account
+FIREBASE_TEST_PASSWORD - firebase test account password
+FIREBASE_TEST_KEY - firebase test account key
+FIREBASE_TEST_UID - firebase test account uid
 ```
 
 ## How to use
