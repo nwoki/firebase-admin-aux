@@ -49,13 +49,13 @@ const mockRequest = (queryData) => {
 beforeAll(async () => {
     // Prepare the firebase account with default redis url (localhost)
     // m_fbAdminAux = new FirebaseAdminAux(true);
-    m_fbAdminAux = new FirebaseAdminAux(false)
+    m_fbAdminAux = new FirebaseAdminAux(true)
     // m_token = await getToken();
 });
 
 
 afterAll(async () => {
-    console.log("---AFTER ALL---");
+    await m_fbAdminAux.prepareShutdown();
 });
 
 describe('Test FirebaseAdminAux singleton veridicity', () => {
@@ -78,11 +78,11 @@ describe('Test FirebaseAdminAux singleton veridicity', () => {
     });
 });
 
-// describe('Test the FirebaseAdminAux setup', () => {
-//     it('Should not re-initialize the same object - used for code coverage', async () => {
-//         await m_fbAdminAux.init([]);
-//     });
-// });
+describe('Test the FirebaseAdminAux setup', () => {
+    it('Should not re-initialize the same object - used for code coverage', async () => {
+        await m_fbAdminAux.init([]);
+    });
+});
 
 // describe('Test the FirebaseAdminAux functions - Account', () => {
 //     it('Should non return a non existing account', async () => {

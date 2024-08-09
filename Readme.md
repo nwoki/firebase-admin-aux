@@ -27,6 +27,7 @@ FIREBASE_TEST_UID
 ```
 import { FirebaseAdminAux } from '@lib/firebase-admin-aux';
 
+// the boolean enables/disables redis lookup cache
 const m_fbAdminAux = new FirebaseAdminAux(true);
 
 await m_fbAdminAux.init([

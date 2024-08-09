@@ -56,7 +56,7 @@ export class FirebaseAdminAux {
     private m_initialized: boolean = false;
     private m_redisConnection: RedisConnection|undefined;// = undefined;// = new RedisConnection();
 
-    private static m_singletonInstance: FirebaseAdminAux|undefined;
+    private static m_singletonInstance: FirebaseAdminAux|undefined = undefined;
 
     /**
      * set a singleton instance
@@ -73,20 +73,13 @@ export class FirebaseAdminAux {
      * get singleton instance
      * @returns FirebaseAdminAux
      */
-    public static instance(): FirebaseAdminAux {
-        // if (!FirebaseAdminAux.m_singletonInstance) {
-        //     // throw new Error('FirebaseAdminAux: singleton instance is not set');
-
-        //     // or return null?
-        //     return null;
-        // }
-        // return FirebaseAdminAux.m_singletonInstance;
+    public static instance(): FirebaseAdminAux | undefined {
         return FirebaseAdminAux.m_singletonInstance;
     }
 
     constructor(withCache?: boolean) {
         if (withCache) {
-            this.m_redisConnection = new RedisConnection(null, 'FirebaseAdminAux');
+            this.m_redisConnection = new RedisConnection(process.env.REDIS_CACHE_URL as string, 'FirebaseAdminAux');
         }
 
         // https://cloud.google.com/blog/products/containers-kubernetes/kubernetes-best-practices-terminating-with-grace
@@ -100,10 +93,21 @@ export class FirebaseAdminAux {
         });
     }
 
-    public async init(configs: FirebaseAccountConfig[]) : Promise<void> {
+    public async prepareShutdown(kill: boolean = true) : Promise<void> {
+        try {
+            if (this.m_redisConnection) {
+                await this.m_redisConnection.close(kill);
+            }
+        } catch (error: any) {
+            console.log('Problem killing redis connection');
+            console.log((error as Error).message);
+        }
+    }
+
+    public async init(configs: FirebaseAccountConfig[]) : Promise<boolean> {
         if (this.m_initialized) {
             console.log('FirebaseAdminAux already initialized!');
-            return;
+            return this.m_initialized;
         }
 
         for (const config of configs) {
