@@ -1,6 +1,6 @@
 import admin from 'firebase-admin';
 import { App, initializeApp } from 'firebase-admin/app';
-import { getAuth, Auth } from 'firebase-admin/auth';
+import { getAuth, Auth, UserRecord } from 'firebase-admin/auth';
 import { getMessaging, Messaging } from 'firebase-admin/messaging';
 import { RedisConnection } from './redisconnection';
 import UrlParse from 'url-parse';
@@ -86,14 +86,9 @@ export class FirebaseAdminAux {
         });
     }
 
-    public async prepareShutdown(kill: boolean = true) : Promise<void> {
-        try {
-            if (this.m_redisConnection) {
-                await this.m_redisConnection.close(kill);
-            }
-        } catch (error: any) {
-            console.log('Problem killing redis connection');
-            console.log((error as Error).message);
+    public async flushKeyValueDatabase() : Promise<void> {
+        if (this.m_redisConnection) {
+            await this.m_redisConnection.flush();
         }
     }
 
@@ -125,6 +120,25 @@ export class FirebaseAdminAux {
 
         this.m_initialized = true;
         console.log('FirebaseAdminAux initializing done');
+    }
+
+    /**
+     * get singleton instance
+     * @returns FirebaseAdminAux
+     */
+    public static instance(): FirebaseAdminAux | undefined {
+        return FirebaseAdminAux.m_singletonInstance;
+    }
+
+    public async prepareShutdown(kill: boolean = true) : Promise<void> {
+        try {
+            if (this.m_redisConnection) {
+                await this.m_redisConnection.close(kill);
+            }
+        } catch (error: any) {
+            console.log('Problem killing redis connection');
+            console.log((error as Error).message);
+        }
     }
 
     /**
@@ -232,11 +246,13 @@ export class FirebaseAdminAux {
     };
 
     public async createUser(userData: CreateUserData, configName?: string) {
-        const firebaseAccount = this.getConfigAccountForFunctions(configName);
-        const userRecord = await firebaseAccount.auth.createUser(userData);
-
-        // console.log(userRecord);
-        return userRecord;
+        try {
+            const firebaseAccount = this.getConfigAccountForFunctions(configName);
+            const userRecord = await firebaseAccount.auth.createUser(userData);
+            return userRecord;
+        } catch (error: any) {
+            throw new Error(error)
+        }
     };
 
     public async deleteUser(userFirebaseUid: string, configName?: string) {
@@ -250,10 +266,14 @@ export class FirebaseAdminAux {
         return userData;
     }
 
-    public async updateUser(userFirebaseUid: string, userData: UpdateUserData, configName?: string) {
-        const firebaseAccount = this.getConfigAccountForFunctions(configName);
-        const userRecord = await firebaseAccount.auth.updateUser(userFirebaseUid, userData);
-        return userRecord;
+    public async updateUser(userFirebaseUid: string, userData: UpdateUserData, configName?: string) : Promise<UserRecord> {
+        try {
+            const firebaseAccount = this.getConfigAccountForFunctions(configName);
+            const userRecord = await firebaseAccount.auth.updateUser(userFirebaseUid, userData);
+            return userRecord;
+        } catch (error: any) {
+            throw new Error(error);
+        }
     }
 
     public async userExists(userEmail: string, configName?: string) {
