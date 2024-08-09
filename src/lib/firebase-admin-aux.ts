@@ -70,14 +70,6 @@ export class FirebaseAdminAux {
         FirebaseAdminAux.m_singletonInstance = instance;
     }
 
-    /**
-     * get singleton instance
-     * @returns FirebaseAdminAux
-     */
-    public static instance(): FirebaseAdminAux | undefined {
-        return FirebaseAdminAux.m_singletonInstance;
-    }
-
     constructor(withCache?: boolean) {
         if (withCache) {
             this.m_redisConnection = new RedisConnection(process.env.REDIS_CACHE_URL as string, 'FirebaseAdminAux');
@@ -124,7 +116,7 @@ export class FirebaseAdminAux {
             const firebaseMessaging = getMessaging(firebaseAdmin);
 
             // stash
-            this.m_firebaseAccounts.set(config.name, {admin: firebaseAdmin, auth: firebaseAuth, messaging: firebaseMessaging} /*as FirebaseAdminObj*/);
+            this.m_firebaseAccounts.set(config.name, {admin: firebaseAdmin, auth: firebaseAuth, messaging: firebaseMessaging} as FirebaseAdminObj);
         }
 
         if (this.m_redisConnection) {
@@ -225,7 +217,7 @@ export class FirebaseAdminAux {
     /****************************
      * FIREBASE WRAPPER ACTIONS *
      ****************************/
-    private getConfigAccountForFunctions(configName?: string) {
+    private getConfigAccountForFunctions(configName?: string): FirebaseAdminObj {
         if (!this.m_initialized) {
             throw new Error('FirebaseAdminAux not initialized');
         }

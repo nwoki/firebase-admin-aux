@@ -25,30 +25,12 @@ let m_fbAdminAux: FirebaseAdminAux;
 const m_fbAdminConfigName = faker.lorem.word();
 let m_token: string;
 
-
-/*
-const mockResponse = () => {
-    const res = {};
-    res.status = sinon.stub().returns(res);
-    res.json = sinon.stub().returns(res);
-    return res;
-};
-
-const mockRequest = (queryData) => {
-    return {
-        query: { data: queryData }
-    };
-};*/
-
-
-
 // NOTE: crate fake api to test the middleware. That way i can use supertest and have req/res automagically ready
 
 
 
 beforeAll(async () => {
     // Prepare the firebase account with default redis url (localhost)
-    // m_fbAdminAux = new FirebaseAdminAux(true);
     m_fbAdminAux = new FirebaseAdminAux(true)
     // m_token = await getToken();
 });
