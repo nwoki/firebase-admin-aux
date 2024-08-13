@@ -5,17 +5,16 @@ import { getMessaging, Messaging } from 'firebase-admin/messaging';
 import { RedisConnection } from './redisconnection';
 import UrlParse from 'url-parse';
 import { Request, Response, NextFunction } from 'express';
-import { Error as JSONAPIError } from 'jsonapi-serializer';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
+import { JSONAPIError, Error as JError} from 'jsonapi-serializer'
 
 function customError(status: number, title: string, message: string) : JSONAPIError {
-    return new JSONAPIError({
-        status: status,
+    return new JError({
+        status: status.toString(),
         title: title,
         detail: message
-    });
+    })
 };
-
 
 export interface FirebaseAccountConfig {
     name: string,               // key to identify the configuration with
@@ -178,7 +177,7 @@ export class FirebaseAdminAux {
 
     public async validateTokenMiddleware(req: Request, res: Response, next: NextFunction) {
         /* no sense in checking for auth if there's no Authorization header, is there? */
-        if (!Object.hasOwn(req.headers, 'authorization')) {
+        if (!req.headers.authorization) {
             console.log(req.headers.authorization);
             return res.status(StatusCodes.UNAUTHORIZED).send(customError(StatusCodes.UNAUTHORIZED, ReasonPhrases.UNAUTHORIZED, 'Missing authorization'));
         }
@@ -217,9 +216,9 @@ export class FirebaseAdminAux {
 
                 // move on
                 next();
-            } catch (error) {
-                console.error(error);
-                return res.status(StatusCodes.BAD_REQUEST).send(customError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST, 'Error processing bearerToken: ' + error.message));
+            } catch (error: any) {
+                console.error(error as Error);
+                return res.status(StatusCodes.BAD_REQUEST).send(customError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST, 'Error processing bearerToken: ' + (error as Error).message));
             }
         } else {
             return res.status(StatusCodes.BAD_REQUEST).send(customError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST, 'Missing auth token'));
